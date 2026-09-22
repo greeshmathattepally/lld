@@ -11,7 +11,7 @@ class Node {
     }
 }
 
-public class LRUCache {
+class LRUCache {
     private final int capacity;
     private final Map<Integer, Node> cache;
     private final Node head;
@@ -20,43 +20,32 @@ public class LRUCache {
     public LRUCache(int capacity) {
         this.capacity = capacity;
         this.cache = new HashMap<>();
-        
-        // Dummy head and tail prevent null pointer checks
         this.head = new Node(-1, -1);
         this.tail = new Node(-1, -1);
         head.next = tail;
         tail.prev = head;
     }
 
-    // Placing 'synchronized' here locks the entire LRUCache instance 
-    // while this thread is reading and moving the node.
     public synchronized int get(int key) {
-        if (!cache.containsKey(key)) {
-            return -1; // Cache Miss
-        }
+        if (!cache.containsKey(key)) return -1;
         Node node = cache.get(key);
-        moveToHead(node); // Cache Hit
+        moveToHead(node);
         return node.value;
     }
 
-    // Locks the instance so no other thread can get() or put() simultaneously.
     public synchronized void put(int key, int value) {
         if (cache.containsKey(key)) {
             Node node = cache.get(key);
             node.value = value;
             moveToHead(node);
         } else {
-            if (cache.size() >= capacity) {
-                evictTail();
-            }
+            if (cache.size() >= capacity) evictTail();
             Node newNode = new Node(key, value);
             cache.put(key, newNode);
             addToHead(newNode);
         }
     }
 
-    // --- Private Helper Methods ---
-    
     private void addToHead(Node node) {
         node.prev = head;
         node.next = head.next;
@@ -78,5 +67,22 @@ public class LRUCache {
         Node lru = tail.prev;
         removeNode(lru);
         cache.remove(lru.key);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        LRUCache cache = new LRUCache(2); // Capacity of 2
+        
+        cache.put(1, 10); // Cache: [1]
+        cache.put(2, 20); // Cache: [2, 1]
+        System.out.println("Get 1: " + cache.get(1)); // Returns 10. Cache is now [1, 2]
+        
+        cache.put(3, 30); // Evicts key 2. Cache: [3, 1]
+        System.out.println("Get 2: " + cache.get(2)); // Returns -1 (not found)
+        
+        cache.put(4, 40); // Evicts key 1. Cache: [4, 3]
+        System.out.println("Get 1: " + cache.get(1)); // Returns -1 (not found)
+        System.out.println("Get 3: " + cache.get(3)); // Returns 30. Cache is now [3, 4]
     }
 }
